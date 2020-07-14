@@ -17,6 +17,10 @@
 <div class="reveal">
     <div class="slides">
         <section>
+            <h2>Project Loom? Better Futures? What's next for JVM concurrent programming</h2>
+            <h3>Adam Warski, SoftwareMill</h3>
+        </section>
+        <section>
             <h2>What's the problem?</h2>
             <p>
                 We want to model many concurrently running processes
@@ -60,6 +64,27 @@
                 <li>limited in number (stack memory)</li>
             </ul>
             <aside class="notes">Each thread has its own stack</aside>
+        </section>
+        <section>
+            <h2>Who am I?</h2>
+            <ul>
+                <li>
+                    Co-founder of <a href="https://softwaremill.com">SoftwareMill</a>
+                </li>
+                <li>
+                    distributed systems, messaging, blockchain, ML/AI, big/fast data, ...
+                </li>
+                <li>
+                    Scala, Kafka, Cassandra consulting
+                </li>
+                <li>14 years developing backend applications: J2EE, Spring, Akka, FP</li>
+                <li>
+                    Open-source contributor (<a href="https://github.com/softwaremill/sttp">sttp-client</a>,
+                    <a href="https://github.com/softwaremill/tapir">sttp-tapir</a>,
+                    <a href="https://github.com/softwaremill/quicklens">quicklens</a>,
+                    <a href="http://hibernate.org/orm/envers/">Hibernate Envers</a>, ...)
+                </li>
+            </ul>
         </section>
         <section>
             <h2>Current solutions</h2>
@@ -113,6 +138,14 @@ CompletableFuture&lt;Boolean&gt; activateUser(Long userId) {
 			</code></pre>
         </section>
         <section>
+            <h2>Future problems</h2>
+            <ul>
+                <li>lost control flow</li>
+                <li>lost context</li>
+                <li>viral</li>
+            </ul>
+        </section>
+        <section>
             <h2>Enter project Loom</h2>
             <blockquote>
                 Project Loom aims to drastically reduce the effort of writing, maintaining, and observing
@@ -127,11 +160,9 @@ CompletableFuture&lt;Boolean&gt; activateUser(Long userId) {
                 <li>in other languages: fibers, goroutines, coroutines, processes ...</li>
             </ul>
 
-            <pre><code class="hljs" data-trim data-line-numbers>
+            <pre><code class="hljs" data-trim>
 Thread t = Thread.startVirtualThread(() -> { ... });
 			</code></pre>
-
-            <h3>Retro-fitting existing kernel-thread-blocking APIs to non-blocking</h3>
         </section>
         <section>
             <h2>What is Loom?</h2>
@@ -156,6 +187,323 @@ Thread t = Thread.startVirtualThread(() -> { ... });
                 <li>exploratory / research project</li>
                 <li>currently in early access</li>
                 <li>subject to change</li>
+            </ul>
+        </section>
+        <section>
+            <h2>Too good to be true?</h2>
+            <p>
+                A virtual thread is still a thread.
+            </p>
+        </section>
+        <section>
+            <h2>Problems with threads</h2>
+            <ul>
+                <li>communication</li>
+                <li>orchestration</li>
+                <li>interruption</li>
+            </ul>
+        </section>
+        <section>
+            <h2>Thread communication / synchronization</h2>
+            <ul>
+                <li>semaphores</li>
+                <li>locks</li>
+                <li>queues / channels</li>
+            </ul>
+        </section>
+        <section>
+            <h2>Why not queues?</h2>
+            <ul>
+                <li>deadlocks</li>
+                <li>race conditions</li>
+                <li>all the reasons why concurrent programming is hard</li>
+            </ul>
+        </section>
+        <section>
+            <h2>Why futures, again?</h2>
+            <ul>
+                <li>performance</li>
+                <li>programming model</li>
+            </ul>
+            <p>
+                One way to reduce concurrency bugs is avoiding direct thread usage.
+            </p>
+        </section>
+        <section>
+            <h2>Towards declarative concurrency</h2>
+            <p>
+                <code>Future</code>s give us sequential/parallel composition.
+            </p>
+            <p>
+                Libraries: and the ability to build higher-level combinators from lower-level ones.
+            </p>
+        </section>
+        <section>
+            <h2>Fetching data in parallel: virtual threads</h2>
+
+            <pre><code class="hljs" data-trim data-line-numbers>
+String sendHttpGet(String url) { return null; }
+
+String run(ExecutorService executor, long userId) throws InterruptedException {
+  AtomicReference&lt;String> profileResult = new AtomicReference&lt;String>(null);
+  AtomicReference&lt;String> friendsResult = new AtomicReference&lt;String>(null);
+
+  CountDownLatch done = new CountDownLatch(2);
+
+  Thread.startVirtualThread(() -> {
+      String result = sendHttpGet("http://profile_service/get/" + userId);
+      profileResult.set(result);
+      done.countDown();
+  });
+  Thread.startVirtualThread(() -> {
+      String result = sendHttpGet("http://friends_service/get/" + userId);
+      friendsResult.set(result);
+      done.countDown();
+  });
+
+  done.await();
+
+  return "Profile: " + profileResult.get() + ", friends: " + friendsResult.get();
+}
+			</code></pre>
+        </section>
+        <section>
+            <h2>Fetching data in parallel: futures</h2>
+
+            <pre><code class="hljs" data-trim data-line-numbers>
+CompletableFuture&lt;String> sendHttpGet(String url) { return null; }
+
+CompletableFuture&lt;String> run(long userId) throws InterruptedException {
+  CompletableFuture&lt;String> profileResult =
+    sendHttpGet("http://profile_service/get/" + userId);
+  CompletableFuture&lt;String> friendsResult =
+    sendHttpGet("http://friends_service/get/" + userId);
+
+  return profileResult.thenCompose(profile ->
+    friendsResult.thenApply(friends ->
+      "Profile: " + profile + ", friends: " + friends));
+}
+			</code></pre>
+        </section>
+        <section>
+            <h2>Best of both worlds?</h2>
+
+            <p>No style fits all use-cases</p>
+
+            <ul>
+                <li>Sometimes it's better to write "synchronous" / "blocking" code</li>
+                <li>Sometimes it's better to operate of Futures</li>
+            </ul>
+            <aside class="notes">Better - subjective - readability; futures - orchestration or processes</aside>
+        </section>
+        <section>
+            <h2>Why Loom, again?</h2>
+
+            <p>Loom gives us:</p>
+
+            <ul>
+                <li>tools to write non-blocking code in the "blocking" style</li>
+                <li>retrofitting blocking APIs into non-blocking ones</li>
+            </ul>
+
+            <p>Loom doesn't give us:</p>
+
+            <ul>
+                <li>a replacement for concurrency toolkits</li>
+            </ul>
+        </section>
+        <section>
+            <h2>Another view</h2>
+
+            <p>We can represent a process as:</p>
+
+            <ul>
+                <li>code: written using the "blocking" style</li>
+                <li>value: which can be composed & orchestrated</li>
+            </ul>
+
+            <aside class="notes">We are very good at manipulating values</aside>
+        </section>
+        <section>
+            <h2>Better <code>Future</code>s</h2>
+
+            <p>What kind of high-level operations might we expect?</p>
+
+            <p><code>retry</code>, <code>runAll</code>, <code>first</code>, <code>delay</code>, ...</p>
+
+            <p>
+                Often these need operate on descriptions of computations, e.g. <code>Callable&lt;T></code> or
+                <code>Callable&lt;CompletableFuture&lt;T>></code>.
+            </p>
+        </section>
+        <section>
+            <h2><code>IO</code>s</h2>
+
+            <p>A <code>Future</code> is a value representing a running computation (eager).</p>
+
+            <p>An <code>IO</code> is a value representing a description of a computation (lazy).</p>
+        </section>
+        <section>
+            <h2>Cancellation</h2>
+
+            <p>We're afraid of <code>Thread.interrupt</code> in Java.</p>
+
+            <p>Not because the concept is wrong, but the implementation is error-prone.</p>
+
+            <p>Cancellation is an important concept: preventing unnecessary work.</p>
+
+            <aside class="notes">
+                Unnecessary work: broken HTTP connection; an error in a single task, when multiple are run.
+                race: cache/database (with delay)
+            </aside>
+        </section>
+        <section>
+            <h2>Finalizers</h2>
+
+            <p>With cancellation comes the problem of cleanup.</p>
+
+            <p>Sometimes code <strong>must</strong> run, e.g.:</p>
+
+            <ul>
+                <li>releasing resources</li>
+                <li>notifying observers</li>
+            </ul>
+        </section>
+        <section>
+            <h2>Interruption using exceptions?</h2>
+
+            <p>
+                Can we use <code>Thread.interrupt</code> for cancellation?
+            </p>
+
+            <p>
+                It might seem so: Loom makes it work with virtual threads, finalizers can be implemented using
+                <code>try ... finally ...</code>.
+            </p>
+        </section>
+        <section>
+            <h2>Cancelling finalizers?</h2>
+
+            <p>
+                If finalizers <strong>must</strong> run, what about cancelling them?
+            </p>
+
+            <p>
+                Possible solutions:
+            </p>
+
+            <ul>
+                <li>uninterruptible regions</li>
+                <li>different finalization mechanism (through a coordinator)</li>
+            </ul>
+        </section>
+        <section>
+            <h2>Where Loom shines: "business logic"</h2>
+
+            <blockquote>
+                "Find a user with the given id, and if the user exists and isn't yet active, activate. The result should
+                indicate if any user has been activated."
+            </blockquote>
+        </section>
+        <section>
+            <h2>Where Loom shines: "business logic"</h2>
+
+            <pre><code class="hljs" data-trim data-line-numbers>
+CompletableFuture&lt;Boolean&gt; activateUser(Long userId) {
+  return database.findUser(userId).thenCompose((u) -> {
+    if (u != null && !u.isActive()) {
+      return database.activateUser(userId)
+                .thenApply((r) -> true);
+    } else {
+      return CompletableFuture.completedFuture(false);
+    }
+  });
+}
+			</code></pre>
+        </section>
+        <section>
+            <h2>Where <code>Future</code>s/<code>IO</code>s shine: orchestation</h2>
+
+            <blockquote>
+                "Lookup the value in the cache, and if no result is returned withing 100ms, lookup the value in the
+                database. The first result should be returned, and accessing the key should be always reported."
+            </blockquote>
+        </section>
+        <section>
+            <h2>Where <code>Future</code>s/<code>IO</code>s shine: orchestation</h2>
+
+            <pre><code class="hljs" data-trim data-line-numbers>
+def lookupValue(key: String): IO[Int] = {
+  IO.race(
+    lookupInCache(key),
+    IO.delay(100.milliseconds).flatMap(_ => lookupInDB(key))
+  ).ensuring(reportKeyAccess(key))
+}
+			</code></pre>
+
+            <p>
+                (here we are using <a href="https://www.scala-lang.org">Scala</a> and the
+                <a href="https://zio.dev">ZIO</a> concurrency toolkit).
+            </p>
+        </section>
+        <section>
+            <h2>We've just scratched the surface</h2>
+
+            <p>
+                We haven't discussed:
+            </p>
+
+            <ul>
+                <li>structured concurrency</li>
+                <li>thread locals / scope values</li>
+                <li>reactive programming</li>
+                <li>streaming</li>
+                <li>actors</li>
+            </ul>
+
+            <p>
+                All of these will be impacted by Loom, though as before, Loom solves some of the problems, but doesn't
+                eliminate the need of declarative concurrency.
+            </p>
+        </section>
+        <section>
+            <h2>Further reading</h2>
+
+            <p>Loom team:</p>
+
+            <ul>
+                <li><a href="https://cr.openjdk.java.net/~rpressler/loom/Loom-Proposal.html">Loom proposal</a></li>
+                <li><a href="https://cr.openjdk.java.net/~rpressler/loom/loom/sol1_part1.html">State of Loom</a></li>
+            </ul>
+
+            <p>Blogs which expand on what we've talked today:</p>
+
+            <ul>
+                <li><a href="https://blog.softwaremill.com/synchronous-or-asynchronous-and-why-wrestle-with-wrappers-2c5667eb7acf">Synchronous or asynchronous, and why wrestle with wrappers?</a></li>
+                <li><a href="https://blog.softwaremill.com/will-project-loom-obliterate-java-futures-fb1a28508232">Will Project Loom obliterate Java Futures?</a></li>
+            </ul>
+
+            <p>Structured concurrency:</p>
+
+            <ul>
+                <li><a href="http://250bpm.com/blog:71">Introducing the term</a></li>
+                <li><a href="https://vorpus.org/blog/notes-on-structured-concurrency-or-go-statement-considered-harmful/">Go statement considered harmful</a></li>
+            </ul>
+
+            <p>Twitter threads:</p>
+
+            <ul>
+                <li><a href="https://twitter.com/adamwarski/status/1261697257226809346">Why we still need libraries</a></li>
+                <li><a href="https://twitter.com/djspiewak/status/1262434932477083649">Where Loom might be lacking</a></li>
+                <li><a href="https://twitter.com/rafaelcodes/status/1176229314112741377">Why Fibers are the wrong</a></li>
+            </ul>
+        </section>
+        <section>
+            <h2>Thank you!</h2>
+
+            <ul>
+                <li><a href="https://twitter.com/adamwarski">Twitter</a></li>
+                <li><a href="https://blog.softwaremill.com">Blog</a></li>
             </ul>
         </section>
     </div>
