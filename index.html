@@ -1,40 +1,180 @@
 <!doctype html>
 <html>
-	<head>
-		<meta charset="utf-8">
-		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
-		<title>reveal.js</title>
+    <title>reveal.js</title>
 
-		<link rel="stylesheet" href="dist/reset.css">
-		<link rel="stylesheet" href="dist/reveal.css">
-		<link rel="stylesheet" href="dist/theme/black.css" id="theme">
+    <link rel="stylesheet" href="dist/reset.css">
+    <link rel="stylesheet" href="dist/reveal.css">
+    <link rel="stylesheet" href="dist/theme/black.css" id="theme">
 
-		<!-- Theme used for syntax highlighted code -->
-		<link rel="stylesheet" href="plugin/highlight/monokai.css" id="highlight-theme">
-	</head>
-	<body>
-		<div class="reveal">
-			<div class="slides">
-				<section>Slide 1</section>
-				<section>Slide 2</section>
-			</div>
-		</div>
+    <!-- Theme used for syntax highlighted code -->
+    <link rel="stylesheet" href="plugin/highlight/monokai.css" id="highlight-theme">
+</head>
+<body>
+<div class="reveal">
+    <div class="slides">
+        <section>
+            <h2>What's the problem?</h2>
+            <p>
+                We want to model many concurrently running processes
+            </p>
+            <aside class="notes"></aside>
+        </section>
+        <section>
+            <h2>Concurrency examples</h2>
+            <ul>
+                <li>http requests</li>
+                <li>processing messages from a queue</li>
+                <li>integrating external services</li>
+                <li>orchestrating workflows</li>
+                <li>background jobs</li>
+                <li>...</li>
+            </ul>
+            <aside class="notes"></aside>
+        </section>
+        <section>
+            <h2>Concurrency</h2>
+            <p>
+                We'd like to create a large number of cheap processes:
+            </p>
+            <ul>
+                <li>it's necessary</li>
+                <li>it's easier</li>
+            </ul>
+            <aside class="notes"></aside>
+        </section>
+        <section>
+            <h2>On the JVM / in Java</h2>
+            <p>
+                The current basic unit of concurrency is a <code>Thread</code>.
+            </p>
+            <p>
+                These threads map 1-1 to kernel threads:
+            </p>
+            <ul>
+                <li>expensive to create (time & memory)</li>
+                <li>expensive to switch (time)</li>
+                <li>limited in number (stack memory)</li>
+            </ul>
+            <aside class="notes">Each thread has its own stack</aside>
+        </section>
+        <section>
+            <h2>Current solutions</h2>
+            <h3>Thread pooling</h3>
+            <p>
+                Each submitted task has to run to completion.
+            </p>
+            <p>
+                Not to limit concurrency, we need fine-grained tasks, and a way to manage them.
+            </p>
+        </section>
+        <section>
+            <h2>Current solutions</h2>
+            <h3><code>Future</code></h3>
+            <p>
+                A value, representing a computation running in the background.
+            </p>
+            <ul>
+                <li>cheap to create</li>
+                <li>cheap to switch</li>
+                <li>unlimited in number (heap memory)</li>
+            </ul>
+        </section>
+        <section>
+            <h2>Life used to be simple ...</h2>
+            <pre><code class="hljs" data-trim data-line-numbers>
+boolean activateUser(Long userId) {
+  User user = database.findUser(userId);
+  if (user != null && !user.isActive()) {
+    database.activateUser(userId);
+    return true;
+  } else {
+    return false;
+  }
+}
+			</code></pre>
+        </section>
+        <section>
+            <h2>... not anymore</h2>
+            <pre><code class="hljs" data-trim data-line-numbers>
+CompletableFuture&lt;Boolean&gt; activateUser(Long userId) {
+  return database.findUser(userId).thenCompose((u) -> {
+    if (u != null && !u.isActive()) {
+      return database.activateUser(userId)
+                .thenApply((r) -> true);
+    } else {
+      return CompletableFuture.completedFuture(false);
+    }
+  });
+}
+			</code></pre>
+        </section>
+        <section>
+            <h2>Enter project Loom</h2>
+            <blockquote>
+                Project Loom aims to drastically reduce the effort of writing, maintaining, and observing
+                high-throughput concurrent applications that make the best use of available hardware.
+            </blockquote>
+        </section>
+        <section>
+            <h2>What is Loom?</h2>
+            <h3>Virtual threads</h3>
+            <ul>
+                <li>just like threads, but cheap to create and block</li>
+                <li>in other languages: fibers, goroutines, coroutines, processes ...</li>
+            </ul>
 
-		<script src="dist/reveal.js"></script>
-		<script src="plugin/notes/notes.js"></script>
-		<script src="plugin/markdown/markdown.js"></script>
-		<script src="plugin/highlight/highlight.js"></script>
-		<script>
-			// More info about initialization & config:
-			// - https://revealjs.com/initialization/
-			// - https://revealjs.com/config/
-			Reveal.initialize({
-				hash: true,
+            <pre><code class="hljs" data-trim data-line-numbers>
+Thread t = Thread.startVirtualThread(() -> { ... });
+			</code></pre>
 
-				// Learn about plugins: https://revealjs.com/plugins/
-				plugins: [ RevealMarkdown, RevealHighlight, RevealNotes ]
-			});
-		</script>
-	</body>
+            <h3>Retro-fitting existing kernel-thread-blocking APIs to non-blocking</h3>
+        </section>
+        <section>
+            <h2>What is Loom?</h2>
+            <h3>Retrofitting</h3>
+            <ul>
+                <li>existing kernel-thread-blocking operations become non-blocking</li>
+                <li>or rather, blocking virtual threads</li>
+            </ul>
+        </section>
+        <section>
+            <h2>What is Loom?</h2>
+            <h3>Also:</h3>
+            <ul>
+                <li>continuations (low-level)</li>
+                <li>tail-call elimination (later)</li>
+            </ul>
+        </section>
+        <section>
+            <h2>State of Loom</h2>
+            <ul>
+                <li>started in 2017</li>
+                <li>exploratory / research project</li>
+                <li>currently in early access</li>
+                <li>subject to change</li>
+            </ul>
+        </section>
+    </div>
+</div>
+
+<script src="dist/reveal.js"></script>
+<script src="plugin/notes/notes.js"></script>
+<script src="plugin/markdown/markdown.js"></script>
+<script src="plugin/highlight/highlight.js"></script>
+<script>
+    // More info about initialization & config:
+    // - https://revealjs.com/initialization/
+    // - https://revealjs.com/config/
+    Reveal.initialize({
+        hash: true,
+
+        // Learn about plugins: https://revealjs.com/plugins/
+        plugins: [RevealMarkdown, RevealHighlight, RevealNotes]
+    });
+</script>
+</body>
 </html>
