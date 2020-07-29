@@ -27,14 +27,16 @@
 <div class="reveal">
     <div class="slides">
         <section>
-            <h3>Project Loom? Better Futures? What's next for JVM concurrent programming</h3>
+            <h3>Project Loom? Better Futures? <span class="c2" style="font-size: xx-large">What's next for concurrent programming on the JVM</span>
+            </h3>
+            <br/>
             <p>Adam Warski, SoftwareMill</p>
             <p>JavaSummit, August 1st, 2020</p>
             <img src="https://files.softwaremill.com/logo/logo_white.png" alt="sml logo"
                  style="height: 180px; margin: 0 auto 4rem auto; background: transparent;">
         </section>
         <section>
-            <h3>What's the problem?</h3>
+            <h3>The problem</h3>
             <p>
                 We want to concurrently run multiple processes.
             </p>
@@ -55,11 +57,11 @@
         <section>
             <h3>Concurrency</h3>
             <p>
-                We'd like to create a large number processes in a cheap way.
+                We'd like to create a <span class="c2">large</span> number of processes in a cheap way.
             </p>
             <ul>
-                <li>it's necessary</li>
-                <li>it's easier</li>
+                <li class="fragment">it's necessary</li>
+                <li class="fragment">it's easier</li>
             </ul>
             <aside class="notes">
                 Necessary - business requirements
@@ -87,18 +89,26 @@
                 <li>
                     Co-founder of <a href="https://softwaremill.com">SoftwareMill</a>
                 </li>
-                <li>14 years developing backend applications: J2EE, Spring, Akka, FP</li>
-                <li>
-                    distributed systems, messaging, blockchain, ML/AI, big/fast data, ...
+                <li>14 years developing backend applications
+                    <ul>
+                        <li style="font-size: x-large">J2EE, Spring, manual concurrency, Akka, FP</li>
+                    </ul>
                 </li>
                 <li>
-                    Scala, Kafka, Cassandra consulting
+                    Our expertise
+                    <ul>
+                        <li style="font-size: x-large">distributed systems, messaging, blockchain, ML/AI, big/fast data,
+                            ...
+                        </li>
+                        <li style="font-size: x-large">Scala, Kafka, Cassandra consulting</li>
+                    </ul>
                 </li>
                 <li>
-                    Open-source contributor (<a href="https://github.com/softwaremill/sttp">sttp-client</a>,
+                    Open-source contributor<br/>
+                    <span style="font-size: x-large"><a href="https://github.com/softwaremill/sttp">sttp-client</a>,
                     <a href="https://github.com/softwaremill/tapir">sttp-tapir</a>,
                     <a href="https://github.com/softwaremill/quicklens">quicklens</a>,
-                    <a href="http://hibernate.org/orm/envers/">Hibernate Envers</a>, ...)
+                    <a href="http://hibernate.org/orm/envers/">Hibernate Envers</a>, ...</span>
                 </li>
             </ul>
         </section>
@@ -111,6 +121,7 @@
             <p class="fragment">
                 Not to limit concurrency, we need fine-grained tasks, and a way to manage them.
             </p>
+            <aside class="notes">Tasks may contain slow and fast parts; these should be separate, maybe runnign on different thread pools?</aside>
         </section>
         <section>
             <h3>Current solutions</h3>
@@ -123,6 +134,22 @@
                 <li>cheap to switch</li>
                 <li>unlimited in number (heap memory)</li>
             </ul>
+        </section>
+        <section>
+            <h3>Composing futures</h3>
+            <pre class="java fragment"><code class="hljs" data-trim>
+var f1 = CompletableFuture.supplyAsync(() -> "x");
+var f2 = CompletableFuture.supplyAsync(() -> 42);
+
+f1.thenCompose(v1 ->
+  f2.thenApply(v2 -> "Result: " + v1 + " " + v2));
+			</code></pre>
+            <pre class="java fragment"><code class="hljs" data-trim>
+CompletableFuture
+  .supplyAsync(() -> 42)
+  .thenCompose(v1 ->
+    CompletableFuture.supplyAsync(() -> "Got: " + v1));
+			</code></pre>
         </section>
         <section>
             <h3>Life used to be simple ...</h3>
@@ -160,11 +187,15 @@ CompletableFuture&lt;Boolean&gt; activateUser(Long userId) {
                 <li>lost context</li>
                 <li>viral</li>
             </ul>
+            <aside class="notes">
+                Futures are an important step in the evolution of concurrent programming.
+                They allow for high-performance, highly concurrent applications, with better modeling of concurrency.
+            </aside>
         </section>
         <section>
-            <h3>Enter project Loom</h3>
+            <h3>Enter Project Loom</h3>
             <blockquote>
-                Project Loom aims to drastically reduce the effort of writing, maintaining, and observing
+                <span class="c2">Project Loom</span> aims to drastically reduce the effort of writing, maintaining, and observing
                 high-throughput concurrent applications that make the best use of available hardware.
             </blockquote>
         </section>
@@ -180,6 +211,12 @@ Thread t = Thread.startVirtualThread(() -> { ... });
                 </li>
                 <li class="fragment">in other languages: fibers, goroutines, coroutines, processes ...</li>
             </ul>
+            <aside class="notes">
+                Changing the basic unit of concurrency
+                No longer bound to kernel threads
+                Behind the scenes, they run on a kernel-thread pool - but that's hidden
+                But that would be just nice syntax without for what's possible w/ Futures without ...
+            </aside>
         </section>
         <section>
             <h3>What is Loom?</h3>
@@ -188,6 +225,20 @@ Thread t = Thread.startVirtualThread(() -> { ... });
                 <li class="fragment">existing kernel-thread-blocking operations become non-blocking</li>
                 <li class="fragment">or rather, blocking virtual threads</li>
             </ul>
+        </section>
+        <section>
+            <h3>What is Loom?</h3>
+            <h4>Retrofit examples</h4>
+            <pre class="java"><code class="hljs" data-trim>
+InputStream inputStream = null;
+inputStream.read();
+
+Writer writer = null;
+writer.write("Hello, world");
+
+Semaphore semaphore = null;
+semaphore.acquire();
+			</code></pre>
         </section>
         <section>
             <h3>What is Loom?</h3>
@@ -213,6 +264,27 @@ Thread t = Thread.startVirtualThread(() -> { ... });
             </p>
         </section>
         <section>
+            <h3>We saw problems with sequential code</h3>
+            <pre class="java"><code class="hljs" data-trim>
+CompletableFuture&lt;Boolean&gt; activateUser(Long userId) {
+  return database.findUser(userId).thenCompose((u) -> {
+    if (u != null && !u.isActive()) {
+      return database.activateUser(userId)
+                     .thenApply((r) -> true);
+    } else {
+      return CompletableFuture.completedFuture(false);
+    }
+  });
+}
+			</code></pre>
+            <aside class="notes">
+                But that's only half of the story
+                Here we've don't have concurrent code, just sequential code broken into smaller pieces
+                  so that it can be run concurrently with others on a small thread pool.
+                Loom will is great for untangling this kind of code.
+            </aside>
+        </section>
+        <section>
             <h3>Problems with threads</h3>
             <ul class="c2">
                 <li>communication</li>
@@ -235,6 +307,7 @@ Thread t = Thread.startVirtualThread(() -> { ... });
                 <li>race conditions</li>
                 <li>all the reasons why concurrent programming is hard</li>
             </ul>
+            <aside class="notes">The number of combinations of thread states grows exponentially</aside>
         </section>
         <section>
             <h3>Why futures, again?</h3>
@@ -252,7 +325,7 @@ Thread t = Thread.startVirtualThread(() -> { ... });
                 <code>Future</code>s give us sequential/parallel composition.
             </p>
             <p class="fragment">
-                via libraries: higher-level combinators
+                Using libraries: higher-level combinators
             </p>
         </section>
         <section>
@@ -370,6 +443,8 @@ String run(long userId) {
                     <li>a replacement for concurrency libraries</li>
                 </ul>
             </div>
+
+            <aside class="notes">Syntax matters! Simple APIs matter as well!</aside>
         </section>
         <section>
             <h3>Another view</h3>
@@ -487,7 +562,7 @@ boolean activateUser(Long userId) {
             <h3>Where <code>Future</code>s/<code>IO</code>s shine: orchestration</h3>
 
             <blockquote>
-                "Lookup the value in the cache, and if no result is returned withing 100ms, lookup the value in the
+                "Lookup the value in the cache, and if no result is returned within 100ms, lookup the value in the
                 database. The first result should be returned, and accessing the key should be always reported."
             </blockquote>
         </section>
@@ -536,42 +611,46 @@ def lookupValue(key: String): IO[Int] = {
             <h2>Further reading</h2>
 
             <div style="font-size: 0.4em;">
-            <p>Loom team:</p>
+                <p>Loom team:</p>
 
-            <ul>
-                <li><a href="https://cr.openjdk.java.net/~rpressler/loom/Loom-Proposal.html">Loom proposal</a></li>
-                <li><a href="https://cr.openjdk.java.net/~rpressler/loom/loom/sol1_part1.html">State of Loom</a></li>
-            </ul>
+                <ul>
+                    <li><a href="https://cr.openjdk.java.net/~rpressler/loom/Loom-Proposal.html">Loom proposal</a></li>
+                    <li><a href="https://cr.openjdk.java.net/~rpressler/loom/loom/sol1_part1.html">State of Loom</a>
+                    </li>
+                </ul>
 
-            <p>Blogs which expand on what we've talked about today:</p>
+                <p>Blogs which expand on what we've talked about today:</p>
 
-            <ul>
-                <li>
-                    <a href="https://blog.softwaremill.com/synchronous-or-asynchronous-and-why-wrestle-with-wrappers-2c5667eb7acf">Synchronous
-                        or asynchronous, and why wrestle with wrappers?</a></li>
-                <li><a href="https://blog.softwaremill.com/will-project-loom-obliterate-java-futures-fb1a28508232">Will
-                    Project Loom obliterate Java Futures?</a></li>
-            </ul>
+                <ul>
+                    <li>
+                        <a href="https://blog.softwaremill.com/synchronous-or-asynchronous-and-why-wrestle-with-wrappers-2c5667eb7acf">Synchronous
+                            or asynchronous, and why wrestle with wrappers?</a></li>
+                    <li><a href="https://blog.softwaremill.com/will-project-loom-obliterate-java-futures-fb1a28508232">Will
+                        Project Loom obliterate Java Futures?</a></li>
+                </ul>
 
-            <p>Structured concurrency:</p>
+                <p>Structured concurrency:</p>
 
-            <ul>
-                <li><a href="http://250bpm.com/blog:71">Introduction</a></li>
-                <li>
-                    <a href="https://vorpus.org/blog/notes-on-structured-concurrency-or-go-statement-considered-harmful/">Go
-                        statement considered harmful</a></li>
-            </ul>
+                <ul>
+                    <li><a href="http://250bpm.com/blog:71">Introduction</a></li>
+                    <li>
+                        <a href="https://vorpus.org/blog/notes-on-structured-concurrency-or-go-statement-considered-harmful/">Go
+                            statement considered harmful</a></li>
+                </ul>
 
-            <p>Twitter threads:</p>
+                <p>Twitter threads:</p>
 
-            <ul>
-                <li><a href="https://twitter.com/adamwarski/status/1261697257226809346">Why we still need libraries</a>
-                </li>
-                <li><a href="https://twitter.com/djspiewak/status/1262434932477083649">Where Loom might be lacking</a>
-                </li>
-                <li><a href="https://twitter.com/rafaelcodes/status/1176229314112741377">Why Fibers are the wrong</a>
-                </li>
-            </ul>
+                <ul>
+                    <li><a href="https://twitter.com/adamwarski/status/1261697257226809346">Why we still need
+                        libraries</a>
+                    </li>
+                    <li><a href="https://twitter.com/djspiewak/status/1262434932477083649">Where Loom might be
+                        lacking</a>
+                    </li>
+                    <li><a href="https://twitter.com/rafaelcodes/status/1176229314112741377">Why Fibers are the
+                        wrong</a>
+                    </li>
+                </ul>
             </div>
         </section>
         <section>
