@@ -74,7 +74,7 @@
                 Currently, the basic unit of concurrency is a <code>Thread</code>.
             </p>
             <p class="fragment">
-                These threads map 1-1 to kernel threads:
+                <code>Thread</code>s map 1-1 to kernel threads:
             </p>
             <ul class="fragment c1">
                 <li>expensive to create (time & memory)</li>
@@ -121,13 +121,28 @@
             <p class="fragment">
                 Not to limit concurrency, we need fine-grained tasks, and a way to manage them.
             </p>
-            <aside class="notes">Tasks may contain slow and fast parts; these should be separate, maybe runnign on different thread pools?</aside>
+            <aside class="notes">
+                Tasks may contain slow and fast parts; these should be separate, maybe running on different thread pools?
+                Different thread pools for different purposes.
+            </aside>
+        </section>
+        <section>
+            <img data-src="images/thread_pool.png" height="650" style="margin-top: -50px"/>
+        </section>
+        <section>
+            <img data-src="images/thread_pool_2.png" height="650" style="margin-top: -50px"/>
+        </section>
+        <section>
+            <img data-src="images/thread_pool_3.png" height="650" style="margin-top: -50px"/>
         </section>
         <section>
             <h3>Current solutions</h3>
-            <h4><code>CompletableFuture</code></h4>
+            <h4><code>CompletableFuture&lt;T></code></h4>
             <p class="c2">
                 A value, representing a computation running in the background.
+            </p>
+            <p class="c2 fragment" style="font-size: x-large">
+                Eventually, the computation will yield a value of type <code>T</code> or end with an error.
             </p>
             <ul class="fragment">
                 <li>cheap to create</li>
@@ -212,6 +227,7 @@ Thread t = Thread.startVirtualThread(() -> { ... });
                 <li class="fragment">in other languages: fibers, goroutines, coroutines, processes ...</li>
             </ul>
             <aside class="notes">
+                Two major contributions of Loom
                 Changing the basic unit of concurrency
                 No longer bound to kernel threads
                 Behind the scenes, they run on a kernel-thread pool - but that's hidden
@@ -238,7 +254,12 @@ writer.write("Hello, world");
 
 Semaphore semaphore = null;
 semaphore.acquire();
+
+Thread.sleep(1000L);
 			</code></pre>
+        </section>
+        <section>
+            <img data-src="images/loom.png" height="650" style="margin-top: -50px"/>
         </section>
         <section>
             <h3>What is Loom?</h3>
@@ -256,12 +277,6 @@ semaphore.acquire();
                 <li>currently in early access</li>
                 <li>subject to change</li>
             </ul>
-        </section>
-        <section>
-            <h3>Too good to be true?</h3>
-            <p class="c2">
-                A virtual thread is still a thread.
-            </p>
         </section>
         <section>
             <h3>We saw problems with sequential code</h3>
@@ -285,6 +300,29 @@ CompletableFuture&lt;Boolean&gt; activateUser(Long userId) {
             </aside>
         </section>
         <section>
+            <h3>Back to the old days</h3>
+            <pre class="java"><code class="hljs" data-trim>
+boolean activateUser(Long userId) {
+  User user = database.findUser(userId);
+  if (user != null && !user.isActive()) {
+    database.activateUser(userId);
+    return true;
+  } else {
+    return false;
+  }
+}
+			</code></pre>
+            <aside class="notes">
+                Not only built-in syntax for futures - but automatic migration of all existing java code.
+            </aside>
+        </section>
+        <section>
+            <h3>Too good to be true?</h3>
+            <p class="c2">
+                A virtual thread is still a thread.
+            </p>
+        </section>
+        <section>
             <h3>Problems with threads</h3>
             <ul class="c2">
                 <li>communication</li>
@@ -293,15 +331,19 @@ CompletableFuture&lt;Boolean&gt; activateUser(Long userId) {
             </ul>
         </section>
         <section>
+            <img data-src="images/concurrent.png" height="650" style="margin-top: -50px"/>
+        </section>
+        <section>
             <h3>Thread communication / synchronization</h3>
             <ul>
                 <li>semaphores</li>
                 <li>locks</li>
                 <li>queues / channels</li>
             </ul>
+            <aside class="notes">Multiple threads perform a task cooperatively</aside>
         </section>
         <section>
-            <h3>Why not queues?</h3>
+            <h3>Why not primitives?</h3>
             <ul class="c1">
                 <li>deadlocks</li>
                 <li>race conditions</li>
@@ -318,6 +360,7 @@ CompletableFuture&lt;Boolean&gt; activateUser(Long userId) {
             <p class="fragment">
                 One way to reduce concurrency bugs is avoiding direct thread usage.
             </p>
+            <aside class="notes">Futures are quite good at describing concurrently running processes</aside>
         </section>
         <section>
             <h3>Towards declarative concurrency</h3>
@@ -409,11 +452,12 @@ String run(long userId) {
     ", friends: " + friendsResult.get()));
 }
 			</code></pre>
+            <aside class="notes">Note that we haven't explicitly used threads</aside>
         </section>
         <section>
             <h3>Fetching data in parallel: more speculation</h3>
 
-            <pre class="java"><code class="hljs" data-trim data-line-numbers="5|7-8">
+            <pre class="java"><code class="hljs" data-trim data-line-numbers="4|5|7-8">
 String sendHttpGet(String url) { ... }
 
 String run(long userId) {
@@ -505,6 +549,9 @@ String run(long userId) {
                     <li>notifying observers</li>
                 </ul>
             </div>
+        </section>
+        <section>
+            <img data-src="images/race.png" height="650" style="margin-top: 50px"/>
         </section>
         <section>
             <h3>Interruption using exceptions?</h3>
