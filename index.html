@@ -30,7 +30,7 @@
             <h3>Project Loom? Better Futures? <span class="c2" style="font-size: xx-large">What's next for concurrent programming on the JVM</span>
             </h3>
             <br/>
-            <p>Adam Warski (@adamwarski), SoftwareMill</p>
+            <p>Adam Warski <span style="font-size: x-large">(<a href="https://twitter.com/adamwarski">@adamwarski</a>)</span>, SoftwareMill</p>
             <p>JavaSummit, August 1st, 2020</p>
             <img src="https://files.softwaremill.com/logo/logo_white.png" alt="sml logo"
                  style="height: 180px; margin: 0 auto 4rem auto; background: transparent;">
@@ -374,7 +374,7 @@ boolean activateUser(Long userId) {
         <section>
             <h3>Fetching data in parallel: virtual threads</h3>
 
-            <pre class="java"><code class="hljs" data-trim data-line-numbers="1|4-7|11-16|24|26-27">
+            <pre class="java"><code class="hljs" data-trim data-line-numbers="1|4-5|9|11-16|24|26-27">
 String sendHttpGet(String url) { ... }
 
 String run(ExecutorService executor, long userId) {
@@ -408,7 +408,7 @@ String run(ExecutorService executor, long userId) {
         <section>
             <h3>Fetching data in parallel: futures</h3>
 
-            <pre class="java"><code class="hljs" data-trim data-line-numbers="1|4-7|9-11">
+            <pre class="java"><code class="hljs" data-trim data-line-numbers="1|4-5|9-11">
 CompletableFuture&lt;String> sendHttpGet(String url) { ... }
 
 CompletableFuture&lt;String> run(long userId) {
