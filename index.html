@@ -30,8 +30,9 @@
             <h3>Project Loom? Better Futures? <span class="c2" style="font-size: xx-large">What's next for concurrent programming on the JVM</span>
             </h3>
             <br/>
-            <p>Adam Warski <span style="font-size: x-large">(<a href="https://twitter.com/adamwarski">@adamwarski</a>)</span>, SoftwareMill</p>
-            <p>JavaSummit, August 1st, 2020</p>
+            <p>Adam Warski <span style="font-size: x-large">(<a
+                    href="https://twitter.com/adamwarski">@adamwarski</a>)</span>, SoftwareMill</p>
+            <p>WroJug Online, September 7th, 2020</p>
             <img src="https://files.softwaremill.com/logo/logo_white.png" alt="sml logo"
                  style="height: 180px; margin: 0 auto 4rem auto; background: transparent;">
         </section>
@@ -110,6 +111,9 @@
                     <a href="https://github.com/softwaremill/quicklens">quicklens</a>,
                     <a href="http://hibernate.org/orm/envers/">Hibernate Envers</a>, ...</span>
                 </li>
+                <li>
+                    <a href="https://softwaremill.com/join-us/">Join us!</a>
+                </li>
             </ul>
         </section>
         <section>
@@ -122,7 +126,8 @@
                 Not to limit concurrency, we need fine-grained tasks, and a way to manage them.
             </p>
             <aside class="notes">
-                Tasks may contain slow and fast parts; these should be separate, maybe running on different thread pools?
+                Tasks may contain slow and fast parts; these should be separate, maybe running on different thread
+                pools?
                 Different thread pools for different purposes.
             </aside>
         </section>
@@ -210,7 +215,8 @@ CompletableFuture&lt;Boolean&gt; activateUser(Long userId) {
         <section>
             <h3>Enter Project Loom</h3>
             <blockquote>
-                <span class="c2">Project Loom</span> aims to drastically reduce the effort of writing, maintaining, and observing
+                <span class="c2">Project Loom</span> aims to drastically reduce the effort of writing, maintaining, and
+                observing
                 high-throughput concurrent applications that make the best use of available hardware.
             </blockquote>
         </section>
@@ -295,7 +301,7 @@ CompletableFuture&lt;Boolean&gt; activateUser(Long userId) {
             <aside class="notes">
                 But that's only half of the story
                 Here we've don't have concurrent code, just sequential code broken into smaller pieces
-                  so that it can be run concurrently with others on a small thread pool.
+                so that it can be run concurrently with others on a small thread pool.
                 Loom will is great for untangling this kind of code.
             </aside>
         </section>
@@ -514,6 +520,16 @@ String run(long userId) {
             </p>
         </section>
         <section>
+            <h3>Improved <code>ExecutorService</code></h3>
+
+            <img data-src="images/es.png"/>
+        </section>
+        <section>
+            <h3>Improved <code>ExecutorService</code></h3>
+
+            <img data-src="images/es2.png"/>
+        </section>
+        <section>
             <h3><code>IO</code>s</h3>
 
             <p class="fragment">A <code>Future</code> is a value representing a <strong>running</strong> computation
@@ -629,6 +645,18 @@ def lookupValue(key: String): IO[Int] = {
                 (here we are using <a href="https://www.scala-lang.org">Scala</a> and the
                 <a href="https://zio.dev">ZIO</a> concurrency toolkit).
             </p>
+
+            <aside class="notes">
+                * interruption/finalizers support, including interruptible/uninterruptible regions ("under development"
+                in Loom)
+                * single composable abstraction (IO) instead of three that are used interchangeably in ExecutorService
+                (Callable, Future and blocking methods)
+                * separating the definition of a process from its final sequencing (unlike with Futures, it doesn't
+                matter where you define a process, it only matters how it's used in the final description)
+                * equational reasoning / referential transparency
+                * lifecycle callbacks (onExit/onError/onComplete etc.) which are guaranteed to be run and can be added
+                separately from the process
+            </aside>
         </section>
         <section>
             <h3>We've just scratched the surface</h3>
@@ -674,6 +702,8 @@ def lookupValue(key: String): IO[Int] = {
                             or asynchronous, and why wrestle with wrappers?</a></li>
                     <li><a href="https://blog.softwaremill.com/will-project-loom-obliterate-java-futures-fb1a28508232">Will
                         Project Loom obliterate Java Futures?</a></li>
+                    <li><a href="https://github.com/typelevel/cats-effect/issues/1057">How Loom might fit
+                        cats-effect</a></li>
                 </ul>
 
                 <p>Structured concurrency:</p>
@@ -683,6 +713,8 @@ def lookupValue(key: String): IO[Int] = {
                     <li>
                         <a href="https://vorpus.org/blog/notes-on-structured-concurrency-or-go-statement-considered-harmful/">Go
                             statement considered harmful</a></li>
+                    <li><a href="https://blog.softwaremill.com/structured-concurrency-and-pure-functions-92dd8ed1a9f2">Structured
+                        concurrency and pure functions</a></li>
                 </ul>
 
                 <p>Twitter threads:</p>
@@ -697,6 +729,8 @@ def lookupValue(key: String): IO[Int] = {
                     <li><a href="https://twitter.com/rafaelcodes/status/1176229314112741377">Why Fibers are the
                         wrong</a>
                     </li>
+                    <li><a href="https://twitter.com/pressron/status/1290210791799443456">Feedback on this
+                        presentation</a></li>
                 </ul>
             </div>
         </section>
@@ -706,7 +740,8 @@ def lookupValue(key: String): IO[Int] = {
             <ul>
                 <li><a href="https://adamw.github.io/loom-pres/">This presentation</a></li>
                 <li><a href="https://twitter.com/adamwarski">Twitter</a> (@adamwarski)</li>
-                <li><a href="https://blog.softwaremill.com">Blog</a></li>
+                <li><a href="https://blog.softwaremill.com">Our blog</a></li>
+                <li><a href="https://softwaremill.com/join-us/">Join us</a></li>
             </ul>
 
             <img src="https://files.softwaremill.com/logo/logo_white.png" alt="sml logo"
