@@ -32,7 +32,7 @@
             <br/>
             <p>Adam Warski <span style="font-size: x-large">(<a
                     href="https://twitter.com/adamwarski">@adamwarski</a>)</span>, SoftwareMill</p>
-            <p>WroJug Online, September 8th, 2020</p>
+            <p>Scale By the Bay, November 12th, 2020</p>
             <img src="https://files.softwaremill.com/logo/logo_white.png" alt="sml logo"
                  style="height: 180px; margin: 0 auto 4rem auto; background: transparent;">
         </section>
@@ -58,7 +58,7 @@
         <section>
             <h3>Concurrency</h3>
             <p>
-                We'd like to create a <span class="c2">large</span> number of processes in a cheap way.
+                We'd like to create a <span class="c2">large</span> number of processes in a <span class="c2">cheap</span> way.
             </p>
             <ul>
                 <li class="fragment">it's necessary</li>
@@ -90,7 +90,7 @@
                 <li>
                     Co-founder of <a href="https://softwaremill.com">SoftwareMill</a>
                 </li>
-                <li>14 years developing backend applications
+                <li>15 years developing backend applications
                     <ul>
                         <li style="font-size: x-large">J2EE, Spring, manual concurrency, Akka, FP</li>
                     </ul>
@@ -106,39 +106,27 @@
                 </li>
                 <li>
                     Open-source contributor<br/>
-                    <span style="font-size: x-large"><a href="https://github.com/softwaremill/sttp">sttp-client</a>,
-                    <a href="https://github.com/softwaremill/tapir">sttp-tapir</a>,
+                    <span style="font-size: x-large"><a href="https://github.com/softwaremill/sttp">sttp client</a>,
+                    <a href="https://github.com/softwaremill/tapir">sttp tapir</a>,
                     <a href="https://github.com/softwaremill/quicklens">quicklens</a>,
                     <a href="http://hibernate.org/orm/envers/">Hibernate Envers</a>, ...</span>
-                </li>
-                <li>
-                    <a href="https://softwaremill.com/join-us/">Join us!</a>
                 </li>
             </ul>
         </section>
         <section>
             <h3>Current solutions</h3>
             <h4>Thread pooling</h4>
-            <p class="fragment">
-                Each submitted task has to run to completion.
-            </p>
-            <p class="fragment">
-                Not to limit concurrency, we need fine-grained tasks, and a way to manage them.
-            </p>
+            <ul class="fragment">
+                <li class="c2">created upfront</li>
+                <li class="c1">expensive to switch</li>
+                <li class="c1">limited in number (stack memory)</li>
+                <li class="c1">we have to deal with them</li>
+            </ul>
             <aside class="notes">
                 Tasks may contain slow and fast parts; these should be separate, maybe running on different thread
                 pools?
                 Different thread pools for different purposes.
             </aside>
-        </section>
-        <section>
-            <img data-src="images/thread_pool.png" height="650" style="margin-top: -50px"/>
-        </section>
-        <section>
-            <img data-src="images/thread_pool_2.png" height="650" style="margin-top: -50px"/>
-        </section>
-        <section>
-            <img data-src="images/thread_pool_3.png" height="650" style="margin-top: -50px"/>
         </section>
         <section>
             <h3>Current solutions</h3>
@@ -161,11 +149,11 @@
 var f1 = CompletableFuture.supplyAsync(() -> "x");
 var f2 = CompletableFuture.supplyAsync(() -> 42);
 
-f1.thenCompose(v1 ->
+var f3 = f1.thenCompose(v1 ->
   f2.thenApply(v2 -> "Result: " + v1 + " " + v2));
 			</code></pre>
             <pre class="java fragment"><code class="hljs" data-trim>
-CompletableFuture
+var f = CompletableFuture
   .supplyAsync(() -> 42)
   .thenCompose(v1 ->
     CompletableFuture.supplyAsync(() -> "Got: " + v1));
@@ -230,7 +218,8 @@ CompletableFuture&lt;Boolean&gt; activateUser(Long userId) {
 Thread t = Thread.startVirtualThread(() -> { ... });
 			        </code></pre>
                 </li>
-                <li class="fragment">in other languages: fibers, goroutines, coroutines, processes ...</li>
+                <li class="fragment">in other languages: fibers, goroutines, coroutines, processes, green threads ...
+                </li>
             </ul>
             <aside class="notes">
                 Two major contributions of Loom
@@ -360,8 +349,8 @@ boolean activateUser(Long userId) {
         <section>
             <h3>Why futures, again?</h3>
             <ul>
-                <li class="fragment">performance</li>
-                <li class="fragment">programming model</li>
+                <li class="fragment">performance: well studied & documented</li>
+                <li class="fragment">programming model: <span class="c2">computation as a value</span></li>
             </ul>
             <p class="fragment">
                 One way to reduce concurrency bugs is avoiding direct thread usage.
@@ -539,13 +528,19 @@ String run(long userId) {
                 computation (lazy).</p>
         </section>
         <section>
-            <h3>Cancellation</h3>
+            <h3>What <code>IO</code> offers above <code>Callable</code></h3>
 
-            <p class="fragment">We're afraid of <code>Thread.interrupt</code> in Java.</p>
+            <p class="fragment">cancellation / interruption / uninterruptible regions</p>
 
-            <p class="fragment">Not because the concept is wrong, but the implementation is error-prone.</p>
+            <p class="fragment">separate process definition from sequencing</p>
 
-            <p class="fragment c2">Cancellation is an important concept: preventing unnecessary work.</p>
+            <p class="fragment">explicit concurrency</p>
+
+            <p class="fragment">equational reasoning</p>
+
+            <p class="fragment">explicit concurrency</p>
+
+            <p class="fragment">composability</p>
 
             <aside class="notes">
                 Unnecessary work: broken HTTP connection; an error in a single task, when multiple are run.
@@ -553,110 +548,27 @@ String run(long userId) {
             </aside>
         </section>
         <section>
-            <h3>Finalizers</h3>
+            <h3>Where Loom shines: sequential logic</h3>
 
-            <p>With cancellation comes the problem of cleanup.</p>
+            <ul>
+                <li>majority of "business" code</li>
+                <li>async is a technical detail</li>
+                <li>readability is paramount</li>
+            </ul>
 
-            <div class="fragment">
-                <p>Sometimes code <strong>must</strong> run, e.g.:</p>
-
-                <ul>
-                    <li>releasing resources</li>
-                    <li>notifying observers</li>
-                </ul>
-            </div>
+            <p>Processes represented as <span class="c2">code</span>.</p>
         </section>
         <section>
-            <img data-src="images/race.png" height="650" style="margin-top: 50px"/>
-        </section>
-        <section>
-            <h3>Interruption using exceptions?</h3>
+            <h3>Where <code>IO</code>s shine: orchestration</h3>
 
-            <p class="fragment">
-                Can we use <code>Thread.interrupt</code> for cancellation?
-            </p>
+            <ul>
+                <li>niche, but business critical code</li>
+                <li>historically error prone</li>
+                <li>async is a first-class citizen</li>
+                <li>readability is paramount: explicit concurrency</li>
+            </ul>
 
-            <p class="fragment c2">It might seem so: Loom makes it work with virtual threads.</p>
-
-            <p class="fragment">Finalizers can be implemented using<br/><code>try ... finally ...</code>.</p>
-        </section>
-        <section>
-            <h3>Cancelling finalizers?</h3>
-
-            <p class="fragment c1">
-                If finalizers <strong>must</strong> run, what about cancelling them?
-            </p>
-
-            <div class="fragment">
-                <p>
-                    Possible solutions:
-                </p>
-
-                <ul>
-                    <li>uninterruptible regions</li>
-                    <li>different finalization mechanism (through a coordinator)</li>
-                </ul>
-            </div>
-        </section>
-        <section>
-            <h3>Where Loom shines: "business logic"</h3>
-
-            <blockquote>
-                "Find a user with the given id, and if the user exists and isn't yet active, activate. The result should
-                indicate if any user has been activated."
-            </blockquote>
-        </section>
-        <section>
-            <h3>Where Loom shines: "business logic"</h3>
-
-            <pre class="java"><code class="hljs" data-trim data-line-numbers>
-boolean activateUser(Long userId) {
-  User user = database.findUser(userId);
-  if (user != null && !user.isActive()) {
-    database.activateUser(userId);
-    return true;
-  } else {
-    return false;
-  }
-}
-			</code></pre>
-        </section>
-        <section>
-            <h3>Where <code>Future</code>s/<code>IO</code>s shine: orchestration</h3>
-
-            <blockquote>
-                "Lookup the value in the cache, and if no result is returned within 100ms, lookup the value in the
-                database. The first result should be returned, and accessing the key should be always reported."
-            </blockquote>
-        </section>
-        <section>
-            <h3>Where <code>Future</code>s/<code>IO</code>s shine: orchestration</h3>
-
-            <pre class="scala"><code class="hljs" data-trim data-line-numbers>
-def lookupValue(key: String): IO[Int] = {
-  IO.race(
-    lookupInCache(key),
-    IO.delay(100.milliseconds).flatMap(_ => lookupInDB(key))
-  ).ensuring(reportKeyAccess(key))
-}
-			</code></pre>
-
-            <p style="font-size: 0.4em;">
-                (here we are using <a href="https://www.scala-lang.org">Scala</a> and the
-                <a href="https://zio.dev">ZIO</a> concurrency toolkit).
-            </p>
-
-            <aside class="notes">
-                * interruption/finalizers support, including interruptible/uninterruptible regions ("under development"
-                in Loom)
-                * single composable abstraction (IO) instead of three that are used interchangeably in ExecutorService
-                (Callable, Future and blocking methods)
-                * separating the definition of a process from its final sequencing (unlike with Futures, it doesn't
-                matter where you define a process, it only matters how it's used in the final description)
-                * equational reasoning / referential transparency
-                * lifecycle callbacks (onExit/onError/onComplete etc.) which are guaranteed to be run and can be added
-                separately from the process
-            </aside>
+            <p>Processes represented as a <span class="c2">value</span>.</p>
         </section>
         <section>
             <h3>We've just scratched the surface</h3>
