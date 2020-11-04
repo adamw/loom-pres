@@ -120,7 +120,7 @@
                 <li class="c2">created upfront</li>
                 <li class="c1">expensive to switch</li>
                 <li class="c1">limited in number (stack memory)</li>
-                <li class="c1">we have to deal with them</li>
+                <li class="c1">we have to deal with threads</li>
             </ul>
             <aside class="notes">
                 Tasks may contain slow and fast parts; these should be separate, maybe running on different thread
@@ -538,8 +538,6 @@ String run(long userId) {
 
             <p class="fragment">equational reasoning</p>
 
-            <p class="fragment">explicit concurrency</p>
-
             <p class="fragment">composability</p>
 
             <aside class="notes">
@@ -563,9 +561,9 @@ String run(long userId) {
 
             <ul>
                 <li>niche, but business critical code</li>
-                <li>historically error prone</li>
+                <li>hard to get right</li>
                 <li>async is a first-class citizen</li>
-                <li>readability is paramount: explicit concurrency</li>
+                <li>readability is paramount</li>
             </ul>
 
             <p>Processes represented as a <span class="c2">value</span>.</p>
